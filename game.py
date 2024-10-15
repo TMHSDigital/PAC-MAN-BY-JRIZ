@@ -1,122 +1,90 @@
 import pygame
-import random
+import time
+from constants import *
+from maze import Maze
+from pacman import Pacman
+from ghost import Ghost
 
-# Initialize Pygame
-pygame.init()
+class Game:
+    def __init__(self):
+        self.maze = Maze()
+        self.pacman = Pacman(CELL_SIZE * 1.5, CELL_SIZE * 1.5)
+        self.ghosts = [Ghost(random.randint(0, WIDTH), random.randint(0, HEIGHT)) for _ in range(NUM_GHOSTS)]
+        self.score = 0
+        self.power_mode = False
+        self.power_mode_time = 0
+        self.game_over = False
+        self.font = pygame.font.Font(None, 36)
 
-# Set up the game window
-WIDTH = 800
-HEIGHT = 600
-window = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Simple Pacman")
+    def handle_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return False
+            if event.type == pygame.KEYDOWN and self.game_over:
+                if event.key == pygame.K_SPACE:
+                    self.reset_game()
+        return True
 
-# Colors
-BLACK = (0, 0, 0)
-YELLOW = (255, 255, 0)
-BLUE = (0, 0, 255)
-WHITE = (255, 255, 255)
+    def update(self):
+        if not self.game_over:
+            keys = pygame.key.get_pressed()
+            dx, dy = 0, 0
+            if keys[pygame.K_LEFT] or keys[pygame.K_a]:
+                dx = -1
+            elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+                dx = 1
+            elif keys[pygame.K_UP] or keys[pygame.K_w]:
+                dy = -1
+            elif keys[pygame.K_DOWN] or keys[pygame.K_s]:
+                dy = 1
+            
+            self.pacman.move(dx, dy, self.maze)
+            
+            for ghost in self.ghosts:
+                ghost.move(self.maze)
+            
+            self.check_collisions()
+            
+            if self.power_mode and time.time() - self.power_mode_time > 5:
+                self.power_mode = False
 
-# Pacman
-pacman_radius = 20
-pacman_x = WIDTH // 2
-pacman_y = HEIGHT // 2
-pacman_speed = 5
+    def check_collisions(self):
+        pacman_rect = pygame.Rect(self.pacman.x - self.pacman.radius, self.pacman.y - self.pacman.radius, 
+                                  self.pacman.radius * 2, self.pacman.radius * 2)
+        
+        for dot in self.maze.dots[:]:
+            if pacman_rect.collidepoint(dot['x'], dot['y']):
+                self.maze.dots.remove(dot)
+                self.score += 10
+        
+        for pellet in self.maze.power_pellets[:]:
+            if pacman_rect.collidepoint(pellet['x'], pellet['y']):
+                self.maze.power_pellets.remove(pellet)
+                self.power_mode = True
+                self.power_mode_time = time.time()
+                self.score += 50
+        
+        for ghost in self.ghosts[:]:
+            if pacman_rect.collidepoint(ghost.x, ghost.y):
+                if self.power_mode:
+                    self.ghosts.remove(ghost)
+                    self.score += 200
+                else:
+                    self.game_over = True
 
-# Ghosts
-num_ghosts = 4
-ghosts = []
-for _ in range(num_ghosts):
-    ghost = {
-        'x': random.randint(0, WIDTH),
-        'y': random.randint(0, HEIGHT),
-        'speed': 3
-    }
-    ghosts.append(ghost)
+    def draw(self, surface):
+        surface.fill(BLACK)
+        self.maze.draw(surface)
+        self.pacman.draw(surface)
+        for ghost in self.ghosts:
+            ghost.draw(surface, self.power_mode)
+        
+        score_text = self.font.render(f"Score: {self.score}", True, WHITE)
+        surface.blit(score_text, (10, 10))
+        
+        if self.game_over:
+            game_over_text = self.font.render("Game Over! Press SPACE to restart", True, WHITE)
+            surface.blit(game_over_text, (WIDTH // 2 - 200, HEIGHT // 2))
 
-# Dots
-num_dots = 50
-dots = []
-for _ in range(num_dots):
-    dot = {
-        'x': random.randint(0, WIDTH),
-        'y': random.randint(0, HEIGHT),
-        'radius': 5
-    }
-    dots.append(dot)
-
-# Score
-score = 0
-font = pygame.font.Font(None, 36)
-
-# Game loop
-running = True
-clock = pygame.time.Clock()
-
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-
-    # Move Pacman
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_LEFT]:
-        pacman_x -= pacman_speed
-    if keys[pygame.K_RIGHT]:
-        pacman_x += pacman_speed
-    if keys[pygame.K_UP]:
-        pacman_y -= pacman_speed
-    if keys[pygame.K_DOWN]:
-        pacman_y += pacman_speed
-
-    # Keep Pacman within the screen
-    pacman_x = max(pacman_radius, min(pacman_x, WIDTH - pacman_radius))
-    pacman_y = max(pacman_radius, min(pacman_y, HEIGHT - pacman_radius))
-
-    # Move ghosts
-    for ghost in ghosts:
-        if ghost['x'] < pacman_x:
-            ghost['x'] += ghost['speed']
-        elif ghost['x'] > pacman_x:
-            ghost['x'] -= ghost['speed']
-        if ghost['y'] < pacman_y:
-            ghost['y'] += ghost['speed']
-        elif ghost['y'] > pacman_y:
-            ghost['y'] -= ghost['speed']
-
-    # Check for collisions with dots
-    for dot in dots[:]:
-        if ((pacman_x - dot['x'])**2 + (pacman_y - dot['y'])**2)**0.5 < pacman_radius + dot['radius']:
-            dots.remove(dot)
-            score += 10
-
-    # Check for collisions with ghosts
-    for ghost in ghosts:
-        if ((pacman_x - ghost['x'])**2 + (pacman_y - ghost['y'])**2)**0.5 < pacman_radius + 20:
-            running = False
-
-    # Clear the screen
-    window.fill(BLACK)
-
-    # Draw Pacman
-    pygame.draw.circle(window, YELLOW, (pacman_x, pacman_y), pacman_radius)
-
-    # Draw ghosts
-    for ghost in ghosts:
-        pygame.draw.circle(window, BLUE, (int(ghost['x']), int(ghost['y'])), 20)
-
-    # Draw dots
-    for dot in dots:
-        pygame.draw.circle(window, WHITE, (dot['x'], dot['y']), dot['radius'])
-
-    # Draw score
-    score_text = font.render(f"Score: {score}", True, WHITE)
-    window.blit(score_text, (10, 10))
-
-    # Update the display
-    pygame.display.flip()
-
-    # Cap the frame rate
-    clock.tick(60)
-
-# Quit the game
-pygame.quit()
+    def reset_game(self):
+        self.__init__()

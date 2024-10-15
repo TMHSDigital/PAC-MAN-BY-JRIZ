@@ -1,0 +1,45 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+.env
+pacman_env
+
+# IDE-specific files
+.vscode/
+.idea/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Pygame compiled files
+*.pyc
+
+# Logs and databases
+*.log
+*.sqlite3
+
+# Build and distribution directories
+build/
+dist/
+*.egg-info/
+
+# Backup files
+*~
+*.bak
+
+# Project-specific files (uncomment if needed)
+# highscores.txt
+# config.ini
+
+# Keep game assets (images, sounds, etc.) in version control
+# !*.png
+# !*.jpg
+# !*.wav
+# !*.mp3
+# !*.ogg
