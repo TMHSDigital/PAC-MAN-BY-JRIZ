@@ -1,3 +1,4 @@
+import random
 import pygame
 import time
 from constants import *
