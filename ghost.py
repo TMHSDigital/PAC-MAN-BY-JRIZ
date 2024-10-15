@@ -10,24 +10,25 @@ class Ghost:
         self.direction = random.choice(['up', 'down', 'left', 'right'])
 
     def move(self, maze):
-        if random.random() < 0.02:  # 2% chance to change direction
-            self.direction = random.choice(['up', 'down', 'left', 'right'])
+        directions = ['up', 'down', 'left', 'right']
+        random.shuffle(directions)
         
-        new_x, new_y = self.x, self.y
-        if self.direction == 'up':
-            new_y -= self.speed
-        elif self.direction == 'down':
-            new_y += self.speed
-        elif self.direction == 'left':
-            new_x -= self.speed
-        elif self.direction == 'right':
-            new_x += self.speed
-        
-        ghost_rect = pygame.Rect(new_x - 20, new_y - 20, 40, 40)
-        if not any(ghost_rect.colliderect(wall) for wall in maze.walls):
-            self.x, self.y = new_x, new_y
-        else:
-            self.direction = random.choice(['up', 'down', 'left', 'right'])
+        for direction in directions:
+            new_x, new_y = self.x, self.y
+            if direction == 'up':
+                new_y -= self.speed
+            elif direction == 'down':
+                new_y += self.speed
+            elif direction == 'left':
+                new_x -= self.speed
+            elif direction == 'right':
+                new_x += self.speed
+            
+            ghost_rect = pygame.Rect(new_x - 10, new_y - 10, 20, 20)
+            if not any(ghost_rect.colliderect(wall) for wall in maze.walls):
+                self.x, self.y = new_x, new_y
+                self.direction = direction
+                break
 
     def draw(self, surface, power_mode):
         color = RED if not power_mode else BLUE
