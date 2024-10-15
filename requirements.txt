@@ -1,1 +1,8 @@
-pygame==2.3.0
+pygame
+numpy
+pillow
+pyopengl
+pytest
+
+
+
